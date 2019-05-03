@@ -69,7 +69,53 @@ Visualizar os detalhes do cluster
 kops update cluster ${NAME}
 ```
 Confirmar deploy e criar efetivamente o cluster
-
 ```
 kops update cluster ${NAME} --yes
 ```
+Verificar situação do cluster
+```
+kops validate cluster
+```
+Visualizar configurações do cluster
+```
+kubectl config view
+```
+
+### Adicionar kubernetes dashboard - Ref: [Dashboard DOC](https://kubernetes.io/docs/tasks/access-application-cluster/web-ui-dashboard/)
+```
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v1.10.1/src/deploy/recommended/kubernetes-dashboard.yaml
+```
+Criar usuário de acesso
+
+>Criar arquivos com o conteúdo abaixo e rodar `kubectl apply -f <filename.yaml>`
+
+Criação do usuário
+```
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: admin-user
+  namespace: kube-system
+```
+Vinculando usuário a função
+* Role `cluster-admin` já deve ter sido criada pelo kops
+```
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: admin-user
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+- kind: ServiceAccount
+  name: admin-user
+  namespace: kube-system
+```
+Recuperar o token do usuário criado
+```
+kubectl -n kube-system describe secret $(kubectl -n kube-system get secret | grep admin-user | awk '{print $1}')
+```
+Para acessar o dashboard na máquina local rodar `kubectl proxy` e acessar o endereço (http://localhost:8001/api/v1/namespaces/kube-system/services/https:kubernetes-dashboard:/proxy/)
+
